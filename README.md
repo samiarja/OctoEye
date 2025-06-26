@@ -158,6 +158,10 @@ Figure 3 shows the optical setup in details.
    - **Event sensor (IMX-636):** Chromatic aberration from the ball lens enables _continuous_ hyperspectral sensing thanks to asynchronous events.
 
 
+## 🛠️ Contribution
+
+We thank [trshashank](https://github.com/trshashank) for his contribution in code review and feedback.
+Interested in contributing? Feel free to submit a pull request — I’ll do my best to review and merge it promptly.
 
 ## Useful references
 - [Animal eyes by Micheal Land](https://www.amazon.com.au/Animal-Michael-Professor-Neurobiology-University/dp/0199581142)
