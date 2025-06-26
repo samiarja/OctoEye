@@ -97,7 +97,7 @@ wavelength = wavelength(sortIdx);
 hex_colors = {'#610061','#0000FF','#00ff92','#00FF00','#ffbe00','#FF0000',...
               '#e90000','#a10000','#6d0000','#3b0f0f','#210808','#1c0404','#030000'};
 
-customRGB = cell2mat(cellfun(@hex2rgb, hex_colors, 'UniformOutput', false));
+customRGB = cell2mat(cellfun(@hex2rgb, hex_colors(:), 'UniformOutput', false));
 interp_colormap = generateInterpolatedColormap(wavelength, customRGB);
 
 plotFocalDistanceTube(sortedFocal, wavelength, customRGB, interp_colormap);
@@ -110,18 +110,53 @@ function fileList = readAndSortFileList(parent_path, folder)
     fileList = fileList(sortIdx);
 end
 
-function peak = getPeakFromImage(img, pixel_intensity_limit)
-    if size(img,3) == 3, img = rgb2gray(img); end
+function peak_corrected_by_mean = getPeakFromImage(img, pixel_intensity_limit)
+    if size(img,3) == 3
+        img = rgb2gray(img);
+    end
+
     img(img > pixel_intensity_limit) = 0;
-    rows = size(img,1);
-    mid_row = round(rows/2);
+
+    [rows, ~] = size(img);
+    mid_row = round(rows / 2);
     r_start = max(1, mid_row - 100);
-    r_end = min(rows, mid_row + 50);
+    r_end   = min(rows, mid_row + 50);
     cropped = double(img(r_start:r_end, :));
+
     cropped_blurred = imgaussfilt(cropped, 2);
+
     rowMaxima = max(cropped_blurred, [], 2);
-    peak = max(rowMaxima);
+    [~, peak_row] = max(rowMaxima);
+
+    [~, peak_col] = max(cropped_blurred(peak_row, :));
+
+    row_start_roi = max(1, peak_row - 15);
+    row_end_roi   = min(size(cropped_blurred, 1), peak_row + 15);
+    col_start_roi = max(1, peak_col - 15);
+    col_end_roi   = min(size(cropped_blurred, 2), peak_col + 15);
+    roi = cropped_blurred(row_start_roi:row_end_roi, col_start_roi:col_end_roi);
+
+    [roi_rows, roi_cols] = size(roi);
+    patch_row_size = floor(roi_rows / 3);
+    patch_col_size = floor(roi_cols / 3);
+    patch_max_values = zeros(3, 3);
+
+    for p = 1:3
+        for q = 1:3
+            r1 = (p-1)*patch_row_size + 1;
+            r2 = (p < 3) * p * patch_row_size + (p == 3) * roi_rows;
+
+            c1 = (q-1)*patch_col_size + 1;
+            c2 = (q < 3) * q * patch_col_size + (q == 3) * roi_cols;
+
+            patch = roi(r1:r2, c1:c2);
+            patch_max_values(p, q) = max(patch(:));
+        end
+    end
+
+    peak_corrected_by_mean = mean(patch_max_values(:));
 end
+
 
 function final_ROI = getFinalROI(img, pixel_intensity_limit, ROI_size, crop_radius)
     if size(img,3) == 3, img = rgb2gray(img); end
